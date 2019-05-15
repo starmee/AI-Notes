@@ -125,8 +125,13 @@ because they are extremely rare compared to background.
 
 2、3两个问题总结起来就是，CNN的数据问题，要提高CNN的数据质量会导致数据量下降，提高了数据量又导致数据质量下降，因此导致CNN不能作为最终的分类器。
 
+另外作者也推测可以通过一些额外的调整去达到SVM分类器的水平。事实确实如此，所以接下来有了Fast RCNN 和 Faster RCNN。
+
 **参考**
 [1] [Region-based Convolutional Networksfor Accurate Object Detection and Segmentation](resource/RCNN/RCNN.pdf)
+
 [2] https://www.cnblogs.com/zyber/p/6672144.html
+
 [3] https://blog.csdn.net/shenxiaolu1984/article/details/51066975
+
 [4] https://www.baidu.com/link?url=G2-kNDnSnaY4K9ElGqY2sFdtm-p-gDtBbj7sYiE-OO5HtGIN1i7HSvZgBOSyTo4S&wd=&eqid=c161182a0003cf66000000025cd621bd
