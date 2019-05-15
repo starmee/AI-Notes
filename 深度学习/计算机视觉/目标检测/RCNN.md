@@ -63,6 +63,7 @@ RCNN首先使用Selective Search从一张图像中选出2K~3K个候选区域。
   数据：
   使用PASCAL VOC 2007的训练集，输入一张图片，输出21维的类别标号，表示20类+背景。 
   考察一个候选框和当前图像上所有标定框重叠面积最大的一个，如果重叠比例大于0.5，则认为此候选框为此标定的类别；否则认为此候选框为背景。
+  在每次迭代时都选取32个正例窗口（覆盖所有类别）和96个背景窗口组成一个128的mini-batch.或者大小为24的mini-batch(网络太大),保证正负样本比例为1:3。
 
 <span id="title-3">
 <b>三、用SVM对特征分类</b>
@@ -97,13 +98,35 @@ CNN 中 pool5层的4096维特征，输出为x,y方向的缩放和平移。
 **代码实现**
 https://github.com/rbgirshick/rcnn 
 
+**细节**
+
+1、SVM分类在推理的时候被写成了图片的向量特征组成的矩阵(shape:2000x4096,2000个特征，长度4096的向量)和SVM权重矩阵(shape:4096xN,N为类别数目)的点积。
+
+2、调优训练时保持正负样本1:3的原因，作者原话如下：
+>We bias the sampling towards positive windows
+because they are extremely rare compared to background.
+
+因为正样本相对于负样本差异比较大，有点异常点检测的思想。
+
 **思考**
 
-为什么不直接用CNN对候选区域进行分类而要用SVM？
+1、为什么用选择性搜索算法提取候选区域？
+论文中提到有好几种候选区域提取方法,有objectness、selective search、Category-independent object proposals、CPMC、multi-scale combinatorial grouping和Ciresan等。作者并不知道哪种方法对RCNN更好，所以选择了可以和先前的工作做可控对比的选择性搜索算法。
 
+2、在CNN调优时和训练SVM分类器时使用的正负样本筛选策略不同，为什么？
+作者在论文7.2部分说了， 最初是在ImageNet上预训练完成后没有调优直接训练SVM(这时用SVM的正负样本筛选策略)，这时的效果是最好的。但是当作者用这个样本策略去对CNN调优时发现效果很差。
+作者猜测是，如何定义正负样本并不是最重要的，样本量对CNN更重要，筛选出来的样本量太少了。
+所以作者使用了另一个样本策略去调优，正样本数量扩大了30倍。
+作者也提到这种抽样方法不利于精确定位。
+
+3、为什么不直接用CNN对候选区域进行分类而要用SVM？
+作者尝试过直接用调优CNN的softmax输出作为分类结果，但是VOC 2007的mAP从54.2％下降到50.9％。
+下降的原因可能是几个因素的组合，包括样本的选取策略不利于精确定位，以及CNN softmax分类器是在随机抽样的负例上训练而不是在用于训练SVM的"hard negatives"上。
+
+2、3两个问题总结起来就是，CNN的数据问题，要提高CNN的数据质量会导致数据量下降，提高了数据量又导致数据质量下降，因此导致CNN不能作为最终的分类器。
 
 **参考**
-[1] Region-based Convolutional Networksfor Accurate Object Detection and Segmentation
+[1] [Region-based Convolutional Networksfor Accurate Object Detection and Segmentation](resource/RCNN/RCNN.pdf)
 [2] https://www.cnblogs.com/zyber/p/6672144.html
 [3] https://blog.csdn.net/shenxiaolu1984/article/details/51066975
 [4] https://www.baidu.com/link?url=G2-kNDnSnaY4K9ElGqY2sFdtm-p-gDtBbj7sYiE-OO5HtGIN1i7HSvZgBOSyTo4S&wd=&eqid=c161182a0003cf66000000025cd621bd
