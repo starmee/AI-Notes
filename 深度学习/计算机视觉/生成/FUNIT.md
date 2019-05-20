@@ -44,3 +44,66 @@ species)
 
 解码器包含几个自适应实例标准化(instance normalization)（AdaIN[18]）残差块[19]和一对上采样(upscale)卷积层。AdaIN残差块就是使用AdaIN作为normalization layer的残差块。对每一个样例，AdaIN首先将样例在每个通道的激活值标准化为零均值和单位方差，然后使用学习到的仿射变换缩放激活值。这个仿射变换由scalars和biases集合组成。注意这个仿射变换具有空间不变性因此只能用于获取全局表观信息(global appearance information)。仿射变换参数使用$z_y$通过一个两层全连接网络自适应计算得到。代入$E_x,E_y,F_x$,(1)式可以分解为:
 ![output](resource/FUNIT/xbar2.png)
+
+通过这种设计，我们旨在使用内容编码器提取类别无关（class-invariant）潜在表示（比如物体姿态），使用类别编码器提取类别相关(class-specific)潜在表示（比如物体外观）。通过将类别潜在编码输入到解码器的AdaIN层，我们使类别图像控制全局外观（比如物体外观），同时内容图像决定局部结构（比如眼睛的位置）。
+
+在训练阶段，类别编码器学习从源类别图像提取类别潜在表示。在测试阶段，泛化为从之前未见过的类别的图像提取。在实验部分，我们证明这个泛化能力依赖于在训练阶段见到的图像类别的数量。训练G时用的源类别越多(比如更多的动物种类），小样本图像转换的性能就越好（比如，从哈士奇转化为美洲狮的效果更好）。
+
+#####3.2. Multi-task Adversarial Discriminat
+
+我们的判别器D由多个判别分类任务同时训练。每个任务都是二分类，预测一张输入图像是源类别的真实图像还是由G转换得到的图像。因为有$\left | \mathbb{S} \right |$个源类别，D产生$\left | \mathbb{S} \right |$个输出。
+更新D时，给D输入类别为$c_x$的真实图片，当D的第$c_x$个输出为false时惩罚D。给D输入类别为$c_x$的假图片，当D的第$c_x$个输出为真时惩罚D。当其他类别($\left | \mathbb{S} \right |\setminus {c_x}$)的图像没有预测为falses时不惩罚D。
+更新G时，仅当D的第$c_x$个输出为false时惩罚G。
+经验发现，这个判别器效果比$\left | \mathbb{S} \right |$分类训练的判别器效果好。
+
+#####3.3. Learning
+
+我们通过解决一个minimax优化问题训练FUNIT框架：![minmax](resource/FUNIT/minmax.png)
+其中，$L_GAN,L_R,L_F$分别是GAN loss，内容图像重构 loss，和特征匹配 loss。
+
+GAN loss:
+![GAN loss](resource/FUNIT/lgan.png)
+D的上标表示物体类别；loss只用相应的二分类预测得分计算。
+
+内容重构loss帮助G学习转换模型。特别地，当使用相同的图像作为输入内容图像和输入类别图像时（这时K=1）,loss会促使G生成和输入相同的图像
+![recon loss](resource/FUNIT/lr.png)
+
+特征匹配loss正则化训练。首先通过移除D的最后一层，构造一个特征提取器，用$D_f$表示。然后使用$D_f$从转换输出$\bar{x}$和类别图像${\{y_1,...,y_k\}}$提取特征并且最小化：
+![feature ex loss](resource/FUNIT/lf.png)
+
+内容转换loss和特征匹配loss都不是图像转换的新话题[29,19,49,36]。我们的贡献在于扩展了它们在更具挑战和更新颖的小样本无监督图像转换领域的使用。
+
+#####4. Experiments
+
+* 实验
+  设置$ \lambda_R=0.1, \lambda_F=1 $。
+  使用RMSProp，学习率0.0001优化(3)式。
+  使用GAN loss[28,32,52,6]的hinge版本
+  和Mescheder等人提出的[31]real gradient penalty regularization
+  最后的生成器是中间生成器[23]的历史平均版本，更新权重是0.001
+  训练FUNIT模型时K=1,测试时K=1,5,10,15,20.
+  每个batch 64个内容图片，平均地分布在一个NVIDIA DGX1机器的8个V100 GPU上。
+
+* 数据集
+  * Animal Faces. 
+  这个数据集由ImageNet[9]中的149种肉食性动物的图片构建。首先从其中手动标注10000个肉食性动物的面部bounding box。然后训练一个Faster RCNN检测图片中动物的面部。我们只使用检测得高分的bounding box。这样得到了一个大小为117574的动物面部图片集。其中119个类别作为source class set, 30个类别作为 target class set.
+  * Birds[47].
+  555种北美鸟类图片，共48527张。444个类别作为source class set，111个类别作为target class set。
+  * Flowers[35].
+  102种公8189张图片。source 和 target种类数目分别为85和17.
+  *Foods[24].
+  256类食物共31395张图片。source和target分别有224和32个类别。
+
+* 疑问
+前两个数据集source和target的类别数目比例都为4:1，后两个数据集source和target的类别数目比例分别为5:1和7:1。为什么这样分配？
+如果说第三个的比例是因为图片数量少，第四个为什么是7:1？是因为食物图片虽然多，但相对于食物的多样化并不算太多？
+
+* Baselines.
+  基于在训练期间target class的图片是否available，定义两个baseline集合：fair(unavailable)和 unfair(available)
+  * Fair.
+  这就是提出FUNIT框架的背景。因为之前没有用于这个背景的无监督图像转换方法，我们通过扩展StarGAN[8]构建了一个baseline，这个baseline是多类无监督图像转换的state of the art。
+  训练时，我们仅使用source class 图片训练StarGAN。
+  测试时，给定 K image of target class，我们计算这K个图片VGG[41] Conv5特征的平均值并且计算source class的每一个图片和VGG Conv5 特征的余弦距离。然后对余弦距离计算softmax得到类别相关向量。用类别相关向量作为StarGAN的输入（取代one-hot类别相关向量输入）生成未见过的target class图片。
+  这个baseline的设计基于这样一个假设，假设类别相关得分可以编码一个未见过的target object class和每一个source class图片有多么相似，这可以用于小样本生成。我们命名这个baseline为`StarGAN-Fair-K`。
+  
+    
