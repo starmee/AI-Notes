@@ -3,6 +3,7 @@
 这是NVIDIA出的小样本无监督图像转换。论文[Few-Shot Unsupervised Image-to-Image Translation](resource/FUNIT/Few-Shot-Unsupervised-Image-to-Image-Translation.pdf)。
 
 ####摘要
+
 无监督图像转换方法学习在不受限的图像数据集上绘画，将一张图像映射成相似的不同种类的图像。虽然有了显著的成果，但是现在的方法在训练时需要大量的源图像和目标图像。我们认为这严重影响了这些方法的应用。从人类可以从极少数样本中提取本质并泛化的能力得到启发，我们寻求一种小样本，无监督图像到图像转换算法。**这种算法适用于测试时仅由少量样本图像指定的以前没见过的目标类。我们的模型通过将对抗训练与新颖的网络设计相结合，实现了小样本泛化能力。** 通过广泛的实验验证和与基准数据集的几种baseline方法的比较，我们验证了所提出框架的有效性。
 代码：https://github.com/NVlabs/FUNIT
 
@@ -13,6 +14,7 @@
 ![图1](resource/FUNIT/figure1.png)
 
 #####3. Few-shot Unsupervised Image Translation
+
 训练数据：
 source classes: a set of object classes (e.g. images of various animal
 species)
@@ -23,17 +25,17 @@ species)
 模型不得不利用少量的目标图片将任意的源类别图像转换为目标类别的相似图像。
 当我们更换不同的新物体类别给这个模型的时候，它也需要将任意的源类别图像转换成新的目标类别的相似图像。
 
-这个框架包括一个**条件图像生成器G**和一个**多任务对抗判别器D**。和已有的无监督图像转换框架[54,29]中的传统图像生成器不同,我们的生成器G同时以内容图像(content image) x 和 一个K类图像集合${\{y_1,...,y_k\}}$作为输入，产生输出图像$\bar{x}$:
+这个框架包括一个**条件图像生成器G**和一个**多任务对抗判别器D**。和已有的无监督图像转换框架[54,29]中的传统图像生成器不同,我们的生成器G同时以内容图像(content image) x 和 一个K个图像集合${\{y_1,...,y_k\}}$作为输入，产生输出图像$\bar{x}$:
 ![output](resource/FUNIT/x.png)
 
-我们假定 content image属于类别 $c_x$, K类图像中的每一个图像都属于类别$c_y$。
+我们假定 content image属于类别 $c_x$, K个图像中的每一个图像都属于类别$c_y$。
 通常K很小并且$c_x$和$c_y$不同。我们会让G作为小样本图像转换器。
 如图1所示，G将一个输入content image $x$映射为一个输出图片$\bar{x}$。$\bar{x}$外观上属于类别$c_y$，结构上(姿态上)却和$x$相近。
 用$\mathbb{S}$和$\mathbb{T}$表示源类集合和目标类集合。在训练时，G学习转换从源类中随机抽样出来的两个类别$c_x,c_y\in \mathbb{S}$并且$ c_x\neq c_y$。在测试时，G从从未见过的目标类别$c\in \mathbb{T}$中取少量图像，将任意一个源类别图像映射为目标类别的相似图像。
-个人理解：
-训练时先从source class中随机抽出两个类别$c_x,c_y$,然后训练G时，$c_y$又作为K个不同类别去训练。这样K类的每个类别图像就相对$x$少了很多，符合测试时目标图像少的情况。
+
 
 ####网络的设计和训练
+
 #####3.1. Few-shot Image Translator
 
 小样本图像转换器G包含了一个内容编码器$E_x$，一个类别编码器$E_y$和一个解码器$F_x$。
@@ -99,11 +101,24 @@ D的上标表示物体类别；loss只用相应的二分类预测得分计算。
 如果说第三个的比例是因为图片数量少，第四个为什么是7:1？是因为食物图片虽然多，但相对于食物的多样化并不算太多？
 
 * Baselines.
-  基于在训练期间target class的图片是否available，定义两个baseline集合：fair(unavailable)和 unfair(available)
+  基于在训练期间target class的图片是否可用（是否有），定义两个baseline集合：fair(没有)和 unfair(有)
   * Fair.
   这就是提出FUNIT框架的背景。因为之前没有用于这个背景的无监督图像转换方法，我们通过扩展StarGAN[8]构建了一个baseline，这个baseline是多类无监督图像转换的state of the art。
   训练时，我们仅使用source class 图片训练StarGAN。
   测试时，给定 K image of target class，我们计算这K个图片VGG[41] Conv5特征的平均值并且计算source class的每一个图片和VGG Conv5 特征的余弦距离。然后对余弦距离计算softmax得到类别相关向量。用类别相关向量作为StarGAN的输入（取代one-hot类别相关向量输入）生成未见过的target class图片。
   这个baseline的设计基于这样一个假设，假设类别相关得分可以编码一个未见过的target object class和每一个source class图片有多么相似，这可以用于小样本生成。我们命名这个baseline为`StarGAN-Fair-K`。
   
-    
+  * Unfair
+  这类baseline的训练过程有target class 图像。我们从1到20改变target class可用图片的数量，训练各种不同的无监督图像转换模型。我们把每个target class用K个图片训练的StarGAN模型叫做 `StarGAN-Unfair-K`。我们还训练了几个state-of-the-art的 two-domain转换模型，包括CycleGAN[54],UNIT[29],和MUNIT[19]。对于这些模型，我们把source classes图片作为first domain，把target classes中的其中一个类别的图片作为second domain.这样产生$|\mathbb{T}|$个无监督图像转换模型，每个数据集（target class）一个two-class baseline。我们把这些baselines标记为CycleGAN-Unfair-K,UNIT-Unfair-K和MUNIT-Unfair-K。
+  对于这些baseline模型，我们使用作者提供的源码和默认超参数。
+
+* Evaluation protocol.
+  我们使用从source classes中随机抽样的25000张图片作为content images。。然后从每个target class中随机抽样K张图片并转换到每个target class。每一种转换方法都产生了$|\mathbb{T}|$个图片集合用于评估。所有的转换方法，对于每一个content image，我们使用同样的 K张图片。我们测试了一个范围内的K值，包括1,5,10,15,20。
+
+* Performance metrics.
+  我们使用几个标准用于评估。首先，我们恒量转换图片和目标类图片是否相似。然后，我们考量在转换过程中类别不变内容是否被保留。最后，我们恒量模型能否用来生成一个target class的图像分布。我们将在下面简要介绍这些标准的性能指标，并在附录中留下详细信息。
+
+  * Translation accuracy 恒量一个转换输出是否属于target class。我们使用两个 InceptionV3[44]分类器。一个分类器使用source 和 target classes训练（记为all）。另一个只用target classes训练(记为test)。我们给出 Top1和Top5准确率。
+  * Content perservation 基于一个感知距离[22,53]的变种，叫做domain-invariant perceptual distance(DIPD)[19]。The distance is given by L2 distance between two normalized VGG [41] Conv5 features,which is more invariant against domain change [19].
+  * Photorealism.(真实感) 由inception scores(IS)[39]度量。We report inception scores using the two inception classifiers trained for measuring translation accuracy,denoted by all and test, respectively.
+  * Distribution matching is based on Frechet Inception Distance (FID) [17]. We compute FID for each of the $|\mathbb{T}|$ target object classes and report their mean FID (mFID).
