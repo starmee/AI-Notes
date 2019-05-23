@@ -120,5 +120,5 @@ D的上标表示物体类别；loss只用相应的二分类预测得分计算。
 
   * Translation accuracy 恒量一个转换输出是否属于target class。我们使用两个 InceptionV3[44]分类器。一个分类器使用source 和 target classes训练（记为all）。另一个只用target classes训练(记为test)。我们给出 Top1和Top5准确率。
   * Content perservation 基于一个感知距离[22,53]的变种，叫做domain-invariant perceptual distance(DIPD)[19]。The distance is given by L2 distance between two normalized VGG [41] Conv5 features,which is more invariant against domain change [19].
-  * Photorealism.(真实感) 由inception scores(IS)[39]度量。We report inception scores using the two inception classifiers trained for measuring translation accuracy,denoted by all and test, respectively.
+  * Photorealism.(真实感) 由inception scores(IS)[39]度量。We report inception scores using the two inception classifiers trained for measuring translation accuracy,denoted by all and test, respectively.
   * Distribution matching is based on Frechet Inception Distance (FID) [17]. We compute FID for each of the $|\mathbb{T}|$ target object classes and report their mean FID (mFID).
