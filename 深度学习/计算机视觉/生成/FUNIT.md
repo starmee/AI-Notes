@@ -2,7 +2,7 @@
 
 这是NVIDIA出的小样本无监督图像转换。论文[Few-Shot Unsupervised Image-to-Image Translation](resource/FUNIT/Few-Shot-Unsupervised-Image-to-Image-Translation.pdf)。
 
-####摘要
+#### 摘要
 
 无监督图像转换方法学习在不受限的图像数据集上绘画，将一张图像映射成相似的不同种类的图像。虽然有了显著的成果，但是现在的方法在训练时需要大量的源图像和目标图像。我们认为这严重影响了这些方法的应用。从人类可以从极少数样本中提取本质并泛化的能力得到启发，我们寻求一种小样本，无监督图像到图像转换算法。**这种算法适用于测试时仅由少量样本图像指定的以前没见过的目标类。我们的模型通过将对抗训练与新颖的网络设计相结合，实现了小样本泛化能力。** 通过广泛的实验验证和与基准数据集的几种baseline方法的比较，我们验证了所提出框架的有效性。
 代码：https://github.com/NVlabs/FUNIT
@@ -12,7 +12,7 @@
 
 ![图1](resource/FUNIT/figure1.png)
 
-#####3. Few-shot Unsupervised Image Translation
+##### 3. Few-shot Unsupervised Image Translation
 
 训练数据：
 source classes: a set of object classes (e.g. images of various animal
@@ -33,9 +33,9 @@ species)
 用$\mathbb{S}$和$\mathbb{T}$表示源类集合和目标类集合。在训练时，G学习转换从源类中随机抽样出来的两个类别$c_x,c_y\in \mathbb{S}$并且$ c_x\neq c_y$。在测试时，G从从未见过的目标类别$c\in \mathbb{T}$中取少量图像，将任意一个源类别图像映射为目标类别的相似图像。
 
 
-####网络的设计和训练
+#### 网络的设计和训练
 
-#####3.1. Few-shot Image Translator
+##### 3.1. Few-shot Image Translator
 
 小样本图像转换器G包含了一个内容编码器$E_x$，一个类别编码器$E_y$和一个解码器$F_x$。
 
@@ -50,14 +50,14 @@ species)
 
 在训练阶段，类别编码器学习从源类别图像提取类别潜在表示。在测试阶段，泛化为从之前未见过的类别的图像提取。在实验部分，我们证明这个泛化能力依赖于在训练阶段见到的图像类别的数量。训练G时用的源类别越多(比如更多的动物种类），小样本图像转换的性能就越好（比如，从哈士奇转化为美洲狮的效果更好）。
 
-#####3.2. Multi-task Adversarial Discriminat
+##### 3.2. Multi-task Adversarial Discriminat
 
 我们的判别器D由多个判别分类任务同时训练。每个任务都是二分类，预测一张输入图像是源类别的真实图像还是由G转换得到的图像。因为有$\left | \mathbb{S} \right |$个源类别，D产生$\left | \mathbb{S} \right |$个输出。
 更新D时，给D输入类别为$c_x$的真实图片，当D的第$c_x$个输出为false时惩罚D。给D输入类别为$c_x$的假图片，当D的第$c_x$个输出为真时惩罚D。当其他类别($\left | \mathbb{S} \right |\setminus {c_x}$)的图像没有预测为falses时不惩罚D。
 更新G时，仅当D的第$c_x$个输出为false时惩罚G。
 经验发现，这个判别器效果比$\left | \mathbb{S} \right |$分类训练的判别器效果好。
 
-#####3.3. Learning
+##### 3.3. Learning
 
 我们通过解决一个minimax优化问题训练FUNIT框架：![minmax](resource/FUNIT/minmax.png)
 其中，$L_GAN,L_R,L_F$分别是GAN loss，内容图像重构 loss，和特征匹配 loss。
@@ -74,7 +74,7 @@ D的上标表示物体类别；loss只用相应的二分类预测得分计算。
 
 内容转换loss和特征匹配loss都不是图像转换的新话题[29,19,49,36]。我们的贡献在于扩展了它们在更具挑战和更新颖的小样本无监督图像转换领域的使用。
 
-#####4. Experiments
+##### 4. Experiments
 
 * 实验
   设置$ \lambda_R=0.1, \lambda_F=1 $。
@@ -156,8 +156,7 @@ D的上标表示物体类别；loss只用相应的二分类预测得分计算。
 * Few-shot transloation for few-shot classification.
   我们使用动物和鸟类数据集评估FUNIT的小样本分类性能。特别地，我们使用训练的FUNIT模型去给每一个小样本类别生成 N（从1，50到100）个图片然后使用生成的图片去训练分类器。我们发现使用FUNIT生成的图片训练的分类器比Hariharan et al. [15]提出的基于特征幻觉（feature hallucination）小样本分类方法能达到更好的效果。结果展示在Table 3 中，实验细节在附录中。
 
-
 ##### 5.Discussion and Future Work
 
 我们引入首个小样本无监督图像转换框架。我们证明小样本生成性能和训练阶段见到的物体类别数量成正相关，同时也和测试阶段提供的目标类别样本数量成正相关。
-经验表明FUNIT通过在测试阶段使用一些未见过的类别样本可以学习转换一个source class图片到一个未见过的类别的图片。
+经验表明FUNIT通过在测试阶段使用一些未见过的类别样本可以学习转换一个source class图片到一个未见过的类别的图片。 
