@@ -11,6 +11,10 @@
 
 * [目标检测](#object-detection)
 
+* [图像生成](#image-generate)
+
+* [GAN](#GAN)
+
 * [深度学习](#deep-learning)  
 
 * [部署框架](#deploy-archatecture)
@@ -21,13 +25,25 @@
 
   [RCNN](深度学习/计算机视觉/目标检测/RCNN.md)
 
+<span id="image-generate">
+<b> 图像生成 </b>
+</span>
 
+[FUNIT](深度学习/计算机视觉/生成/FUNIT.md)
+
+
+<span id="GAN">
+<b> GAN </b>
+</span>
+
+[FUNIT](深度学习/计算机视觉/生成/FUNIT.md)
 
 <span id="deep-learning">
 <b> 深度学习 </b>
 </span>
 
-  [RCNN](深度学习/计算机视觉/目标检测/RCNN.md)
+[RCNN](深度学习/计算机视觉/目标检测/RCNN.md)
+[FUNIT](深度学习/计算机视觉/生成/FUNIT.md)
 
 
 
