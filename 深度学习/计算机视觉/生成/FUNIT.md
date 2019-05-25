@@ -9,7 +9,6 @@
 
 
 >下文只是随读随记，全部读完之后会做一个总结整理。
-这个框架或许可以用来做换脸。
 
 ![图1](resource/FUNIT/figure1.png)
 
@@ -119,6 +118,46 @@ D的上标表示物体类别；loss只用相应的二分类预测得分计算。
   我们使用几个标准用于评估。首先，我们恒量转换图片和目标类图片是否相似。然后，我们考量在转换过程中类别不变内容是否被保留。最后，我们恒量模型能否用来生成一个target class的图像分布。我们将在下面简要介绍这些标准的性能指标，并在附录中留下详细信息。
 
   * Translation accuracy 恒量一个转换输出是否属于target class。我们使用两个 InceptionV3[44]分类器。一个分类器使用source 和 target classes训练（记为all）。另一个只用target classes训练(记为test)。我们给出 Top1和Top5准确率。
-  * Content perservation 基于一个感知距离[22,53]的变种，叫做domain-invariant perceptual distance(DIPD)[19]。The distance is given by L2 distance between two normalized VGG [41] Conv5 features,which is more invariant against domain change [19].
+  * Content perservation 基于一个感知距离[22,53]的变种，叫做domain-invariant perceptual distance(DIPD)[19]。The distance is given by L2 distance between two normalized VGG [41] Conv5 features,which is more invariant against domain change [19].
   * Photorealism.(真实感) 由inception scores(IS)[39]度量。We report inception scores using the two inception classifiers trained for measuring translation accuracy,denoted by all and test, respectively.
   * Distribution matching is based on Frechet Inception Distance (FID) [17]. We compute FID for each of the $|\mathbb{T}|$ target object classes and report their mean FID (mFID).
+
+![Table 1](resource/FUNIT/table1.png)
+* Main results.
+  如Table 1 所示, 我们提出的FUNIT框架在 Animal Faces和 North American Birds数据集上的所有性能度量的表现都要优于这些小样本无监督图像转换的baselines.对于1-shot和5-shot设置，FUNIT在Animal Face 数据集上分别达到了82.36和96.05的Top-5准确率，在North American Birds 数据集分别达到了60.19和75.75的Top-5准确率。它们都显著的比对应的fair baselines好很多。相似的情况也出现在domain invariant perceptual distance, inception score, 和 Frechet inception distance。甚至，只用 5 shots, FUNIT的表现优于所有20-shot的unfair basellines. 注意 CycleGAN-Unfair-20, UNIT-Unfair-20,和 MUNIT-Unfair-20的结果都是 $|\mathbb{T}|$ 图像转换网络，同时我们的方法是单图像转换网络。
+
+  这个表也表明 FUNIT 模型的性能和测试时target images的数量 K 成正相关。更大的 K 能够促进所有的指标提升，从 K=1到K=5 提升的最快。StarGAN-Fair baseline 没有类似的规律。
+
+  ![Figure 2](resource/FUNIT/figure2.png)
+  在 Figure 2 中, 我们可视化了 FUNIT-5 得出的雄安拥抱转换结果。结果显示 FUNIT 能够成功地将source classes地图片转换成与新target class 图片相似的图片。input content image $X$ 的姿态和输出图片 $\bar{X}$ 非常一致。同时输出图片和target classes图片相比很相似、逼真。
+
+  ![Figure 3](resource/FUNIT/figure3.png)
+  在 Figure 3 中， 我们提供一个可视化对比。因为baselines 并不是被设计用来做小样本图像转换，所以它们在转换任务上表现不好。它们要么生成大量的人造图片要么只是输出了input content iamge。另一方面，FUNIT 生成了高质量的转换图片。
+
+* User Study.
+  为了比较转换输出的真实感和faithfulness，我们使用 Amazon Mechanical Turk(AMT)平台做了人工评估。特别地，我们对不同的方法给出一个target class image和两个转换输出，然后让workers（人）去选择和targe class image更像的输出图像，不限制选择的时间。Animal Faces 和 North American Birds 数据集都使用。每次对比，我们随机生成500个问题，并且每个问题都由5个不同的workers回答。为了控制质量，每一个worker必须具有大于98%的终身任务通过率才能参与评估。
+
+  ![Table 2](resource/FUNIT/table2.png)
+  根据 Table 2, 人们主观地认为由提出的方法在5-shot的设置下（FUNIT-5）产生的转换输出 与 同样设置的 fair baseline （StarGAN-Fair-5）产生的输出相比，前者与target class 图像更相似。即使与 训练时每个target class 20张图片的 unfair baselines相比，人们仍然认为我们的结果更可信。
+
+![Figure 4](resource/FUNIT/figure4.png)
+* Number of source classes in the training set.
+  在 Figure 4 中，我们分析了使用动物数据集，在one-shot设置下(FUNIT-1)性能与训练集source classes数量的关系。我们间隔为10画出了source classes类别数从69到119的曲线。如图所示，转换准确率，图像质量，和分布与物体类别的数量成正相关。域不变感知距离(domain-invariant perceptual distance)保持平坦。这表明，FUNIT在训练阶段见越多的物体类别，在测试阶段表现就更好。相似的规律在bird数据集可以观察到，附录中有展示。
+
+* Parameter analysis and ablation study. 
+  我们分析目标函数中每一项的作用发现它们都有效。特别地，内容重构 loss 能提高内容保留分数。附录中有实验结果。
+
+* Latent interpolation.
+  在附录中，我们展示了保持内容编码固定，在两个source class的类别编码之间插值的结果。有趣的是，通过在两个source class（Siamese cat and Tiger）之间插值，我们有时能够生成一个从未见过的target class(Tabby cat)。
+
+* Failure cases.
+  附录中有我们提出的算法的几个失败案例。它们包括生成混合物体，忽略 input content images,和忽略input class images.
+
+* Few-shot transloation for few-shot classification.
+  我们使用动物和鸟类数据集评估FUNIT的小样本分类性能。特别地，我们使用训练的FUNIT模型去给每一个小样本类别生成 N（从1，50到100）个图片然后使用生成的图片去训练分类器。我们发现使用FUNIT生成的图片训练的分类器比Hariharan et al. [15]提出的基于特征幻觉（feature hallucination）小样本分类方法能达到更好的效果。结果展示在Table 3 中，实验细节在附录中。
+
+
+##### 5.Discussion and Future Work
+
+我们引入首个小样本无监督图像转换框架。我们证明小样本生成性能和训练阶段见到的物体类别数量成正相关，同时也和测试阶段提供的目标类别样本数量成正相关。
+经验表明FUNIT通过在测试阶段使用一些未见过的类别样本可以学习转换一个source class图片到一个未见过的类别的图片。
