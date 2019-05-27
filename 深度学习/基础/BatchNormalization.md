@@ -67,6 +67,11 @@ BN的效果虽然很好，但是作用原理受到了质疑。MIT的研究者在
 
 详见[深度学习中批归一化的陷阱](http://ai.51cto.com/art/201705/540230.htm)
 
+##### 用法
+1、如果在Tensorflow中使用 BN，需要在训练时加上下面的代码：
+![bn_tf](resource/BatchNormalization/bn_tf.png)
+2、如果在Caffe中使用 BN，需要在推理时指定参数`use_global_stats:true`，训练时指定 `false`（默认就是 `false`）。
+
 **参考**
 [1] [Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift](resource/BatchNormalization/BatchNormalization.pdf)
 
