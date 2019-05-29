@@ -51,6 +51,12 @@ RCNN首先使用Selective Search从一张图像中选出2K~3K个候选区域。
   (b)先把候选区域裁剪出来，然后用固定的背景颜色填充成正方形（背景颜色也是用候选区域的颜色均值），如下图(C)。
   ![](resource/RCNN/resize.png)
 
+  >The convolutional networks used in this work require a fixed-size input (e.g., 227 × 227 pixels) in order to produce a fixed-size output. For detection, we consider object proposals that are arbitrary image rectangles. We evaluated two approaches for transforming object proposals into valid CNN inputs. 
+  The first method (“tightest square with context”) encloses each object proposal inside the tightest square and then scales (isotropically) the image contained in that square to the CNN input size. Fig. 7 column (B) shows this transformation. A variant on this method (“tightest square without context”) excludes the image content that surrounds the original object proposal. Fig. 7 column (C) shows this transformation. The second method (“warp”) anisotropically scales each object proposal to the CNN input size. Fig. 7 column (D) shows the warp transformation. 
+  For each of these transformations, we also consider including additional image context around the original object proposal. The amount of context padding (p) is defined as a border size around the original object proposal in the transformed input coordinate frame. Fig. 7 shows p = 0 pixels in the top row of each example and p = 16 pixels in the bottom row. In all methods, if the source rectangle extends beyond the image, the missing data are replaced with the image mean (which is then subtracted before inputing the image into the CNN). A pilot set of experiments showed that warping with context padding (p = 16 pixels) outperformed the alternatives by a large margin (3-5 mAP points). Obviously more alternatives are possible, including using replication instead of mean padding. Exhaustive evaluation of these alternatives is left as future work.
+
+  这里作者说 直接缩放并且加pad（warping with context padding）的方法效果最好。
+
 * **2、预训练**
   网络结构：
   这个过程其实就是迁移学习,可以提高精度,减少对检测数据的数据量需求。网络结构是基本借鉴Hinton 2012年在Image Net上的分类网络Alexnet，略作简化。此网络提取的特征为4096维，之后送入一个4096->1000的全连接(fc)层进行分类。网络结构如下：
