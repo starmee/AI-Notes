@@ -49,7 +49,7 @@ RoI最大池化将 h x w 的 RoI 窗口分成 H x W 的网格，每个网络尺�
 <b>2.3. Fine-tuning for detection</b>
 </span>
 
-使用反向传播训练所有网络权重是Fast RCNN的 重要能力。受限，我们阐述为什么SPPnet不能更新空间金字塔池化下的权重。
+使用反向传播训练所有网络权重是Fast RCNN的 重要能力。首先，我们阐述为什么SPPnet不能更新空间金字塔池化下的权重。
 
 根本原因是当每个训练样例（比如 RoI）都来自不同的图像时，通过SPP层的反向传播非常低效，这正是RCNN和SPPnet的训练方式。效率低下的原因在于每个RoI可能有非常大的感受域，通常跨越整个输入图像。由于前向传播必须处理整个感受域，所以训练输入会很大（通常是整个图像）。
 
@@ -60,6 +60,44 @@ RoI最大池化将 h x w 的 RoI 窗口分成 H x W 的网格，每个网络尺�
 除了分层抽样，Fast RCNN使用简化的训练过程，一个调优阶段联合优化softmax分类器和bbox回归器，而不用分三个阶段训练[9,11]softmax分类器、SVM、和回归器。该步骤的组成部分（损失函数、mini-batch抽样策略、RoI池化层的反向传播、和SGD超参数）在下面描述。
 
 
+<span id="multi-task-loss">
+<b>Multi-task loss</b>
+</span>
+
+Fast RCNN 网络有两个并列输出层。一个输出 K+1 个类别的离散概率分布（每个RoI），$p=(p_0,...,p_k)$。通常，$p$由一个全连接层的 K+1 个输出计算得出。另一个输出bbox回归偏移，对 K 个物体类别的每一个类别k有 $t^{k}=\left(t_{x}^{k}, t_{y}^{k}, t_{\mathrm{w}}^{k}, t_{\mathrm{h}}^{k}\right)$。我们使用[9]中给出的$t^k$的参数化，其中$t^k$指定相对于候选区域的平移不变转换和对数空间高/宽平移。
+
+每一个训练RoI都有一个类别$u$和一个bbox标签$v$。我们使用多任务损失函数$L$联合训练分类和bbox回归:
+$L\left(p, u, t^{u}, v\right)=L_{\mathrm{cls}}(p, u)+\lambda[u \geq 1] L_{\mathrm{loc}}\left(t^{u}, v\right)$,(1)
+其中$L_{\mathrm{cls}}(p, u)=-\log p_{u}$是真实类别$u$的对数损失。
+
+第二项损失，$L_{\mathrm{loc}}$，定义在类别$u$的bbox回归目标$v=\left(v_{\mathrm{x}}, v_{\mathrm{y}}, v_{\mathrm{w}}, v_{\mathrm{h}}\right)$,和预测tuple $t^{u}=\left(t_{\mathrm{x}}^{u}, t_{\mathrm{y}}^{u}, t_{\mathrm{w}}^{u}, t_{\mathrm{h}}^{u}\right)$之间。当$u \geq 1$时，$[u \geq 1]$为1，否则为0.根据习惯背景类的标签为$u=0$。背景RoI没有bbox的概念，因此$L_{\mathrm{loc}}$被忽略。对bbox回归，损失函数为：
+$$
+L_{\mathrm{loc}}\left(t^{u}, v\right)=\sum_{i \in\{\mathrm{x}, \mathrm{y}, \mathrm{w}, \mathrm{h}\}} \operatorname{smooth}_{L_{1}}\left(t_{i}^{u}-v_{i}\right)
+$$   ,（2）
+
+其中，
+$$
+\operatorname{smooth}_{L_{1}}(x)=\left\{\begin{array}{ll}{0.5 x^{2}} & {\text { if }|x|<1} \\ {|x|-0.5} & {\text { otherwise }}\end{array}\right.
+$$   , (3)
+
+是一个很鲁邦的$L_1$损失，在RCNN和SPPnet中对异常值的敏感程度要比$L_2$损失低。
+
+方程（1）中的超参数$\lambda$用来平衡两个loss。将bbox回归的目标（标签）$v_i$归一化为零均值和单位方差。所有的实验中$\lambda$都设置为1。
+
+我们注意到[6]使用相关的损失函数训练一个类别无关(class-agnostic)的物体候选区域网络(We note that [6] uses a related loss to train a classagnostic object proposal network.)。和我们的方法不同，[6]提出双网络系统将定位和分类分开。OverFeat[19]，R-CNN[9]，和SPPnet[11]训练分类器和回归定位器，然而这些方法都是分阶段训练，不如Fast R-CNN好（第5.1节）。
+
+<span id="mini-batch-sampling">
+<b>Mini-batch sampling</b>
+</span>
+
+调优期间，每个SGD mini-batch由 N=2 个图像构成，随机选择（和通常的做法一样，我们实际上只是在数据集的排列上迭代）。每个 mini-batch R=128，从每张图片中抽样64个 RoI。和[9]一样，我们从候选区域中取 25% 的RoI，它们与ground-truth bbox的IoU至少为0.5。这些RoI为前景物体类别，即 u>=1。剩下的RoI从与ground-truth的IoU值为[0.1,0.5)的区间抽取，和[11]一样。这些是背景样例，标签u=0。阈值低于0.1的作为难例挖掘的启发式算法[8]。训练期间，图片以0.5的概率水平翻转。没有使用其它的数据增强手段。
+
+<span id="back-propagation-roi">
+<b>Back-propagation through RoI pooling layers.</b>
+</span>
+
+RoI 池化层的反向传播推导。声明，我们假定每个mini-batch只有一张图片(N=1)，将其推广为 N>1 是直接的，因为前向过程独立对待每张图片。
+令$x_{i} \in \mathbb{R}$为RoI池化层的第 i 个激活输入，令$y_{r j}$为这一层的第 r 个 RoI 的第 j 个输出。
 
 整体框架
 
