@@ -23,7 +23,8 @@
 <b> 目标检测 </b>
 </span>
 
-  [RCNN](深度学习/计算机视觉/目标检测/RCNN.md)
+  [RCNN](深度学习/计算机视觉/目标检测/RCNN.md)、
+  [Fast RCNN](深度学习/计算机视觉/目标检测/FastRCNN.md)
 
 <span id="image-generate">
 <b> 图像生成 </b>
@@ -47,6 +48,7 @@
 [Dying ReLU](深度学习/基础/Dying_ReLU.md)、
 [BatchNormalization](深度学习/基础/BatchNormalization.md)、
 [RCNN](深度学习/计算机视觉/目标检测/RCNN.md)、
+[Fast RCNN](深度学习/计算机视觉/目标检测/FastRCNN.md)、
 [FUNIT](深度学习/计算机视觉/生成/FUNIT.md)、
 
 

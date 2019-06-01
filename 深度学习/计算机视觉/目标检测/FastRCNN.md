@@ -3,6 +3,33 @@
 论文:[Fast R-CNN](resource/FastRCNN/FastRCNN.pdf)
 Caffe代码:https://github.com/rbgirshick/fast-rcnn
 
+* [1. Introduction](#introduction)
+* [2. Fast R-CNN architecture and training](#architecture)
+  * [2.1. The RoI pooling layer](#roi-pooling)
+  * [2.2. Initializing from pre-trained networks](#pre-train)
+  * [2.3. Fine-tuning for detection](#fine-tuning)
+    * [Multi-task loss](#multi-task-loss)
+    * [Mini-batch sampling](#mini-batch-sampling)
+    * [Back-propagation through RoI pooling layers.](#back-propagation-roi)
+    * [SGD hyper-parameters.](#sgd-parameters)
+    * [Scale invariance](#scale-invariance)
+* [3. Fast R-CNN detection](#detection)
+  * [3.1. Truncated SVD for faster detection](#svd)
+* [4.Main results](#results)
+  * [4.5. Which layers to fine-tune?](#fine-tune)
+* [5. Design evaluation](#design-evaluation)
+  * [5.1.Does multi-task training help?](#does-multi-task-help)
+  * [5.2. Scale invariance: to brute force or finesse?](#which-scale-invariance)
+  * [5.3. Do we need more training data?](#more-data)
+  * [5.4. Do SVMs outperform softmax?](#svm-softmax)
+  * [5.5. Are more proposals always better?](#more-proposals)
+
+
+=========================================================================
+<span id="introduction">
+<b>1. Introduction</b>
+</span>
+
 Fast RCNN 属于目标检测领域，是对RCNN和SPPNet的改进。
 [RCNN](RCNN.md)主要有如下问题:
 （1）训练分多阶段。预训练->调优训练->SVM分类->bbox回归
@@ -67,18 +94,18 @@ RoI最大池化将 h x w 的 RoI 窗口分成 H x W 的网格，每个网络尺�
 Fast RCNN 网络有两个并列输出层。一个输出 K+1 个类别的离散概率分布（每个RoI），$p=(p_0,...,p_k)$。通常，$p$由一个全连接层的 K+1 个输出计算得出。另一个输出bbox回归偏移，对 K 个物体类别的每一个类别k有 $t^{k}=\left(t_{x}^{k}, t_{y}^{k}, t_{\mathrm{w}}^{k}, t_{\mathrm{h}}^{k}\right)$。我们使用[9]中给出的$t^k$的参数化，其中$t^k$指定相对于候选区域的平移不变转换和对数空间高/宽平移。
 
 每一个训练RoI都有一个类别$u$和一个bbox标签$v$。我们使用多任务损失函数$L$联合训练分类和bbox回归:
-$L\left(p, u, t^{u}, v\right)=L_{\mathrm{cls}}(p, u)+\lambda[u \geq 1] L_{\mathrm{loc}}\left(t^{u}, v\right)$,(1)
+
+![](resource/FastRCNN/loss.png)
+
 其中$L_{\mathrm{cls}}(p, u)=-\log p_{u}$是真实类别$u$的对数损失。
 
 第二项损失，$L_{\mathrm{loc}}$，定义在类别$u$的bbox回归目标$v=\left(v_{\mathrm{x}}, v_{\mathrm{y}}, v_{\mathrm{w}}, v_{\mathrm{h}}\right)$,和预测tuple $t^{u}=\left(t_{\mathrm{x}}^{u}, t_{\mathrm{y}}^{u}, t_{\mathrm{w}}^{u}, t_{\mathrm{h}}^{u}\right)$之间。当$u \geq 1$时，$[u \geq 1]$为1，否则为0.根据习惯背景类的标签为$u=0$。背景RoI没有bbox的概念，因此$L_{\mathrm{loc}}$被忽略。对bbox回归，损失函数为：
-$$
-L_{\mathrm{loc}}\left(t^{u}, v\right)=\sum_{i \in\{\mathrm{x}, \mathrm{y}, \mathrm{w}, \mathrm{h}\}} \operatorname{smooth}_{L_{1}}\left(t_{i}^{u}-v_{i}\right)
-$$   ,（2）
+
+![](resource/FastRCNN/loc_loss.png)
 
 其中，
-$$
-\operatorname{smooth}_{L_{1}}(x)=\left\{\begin{array}{ll}{0.5 x^{2}} & {\text { if }|x|<1} \\ {|x|-0.5} & {\text { otherwise }}\end{array}\right.
-$$   , (3)
+
+![](resource/FastRCNN/smooth.png)
 
 是一个很鲁邦的$L_1$损失，在RCNN和SPPnet中对异常值的敏感程度要比$L_2$损失低。
 
@@ -97,17 +124,141 @@ $$   , (3)
 </span>
 
 RoI 池化层的反向传播推导。声明，我们假定每个mini-batch只有一张图片(N=1)，将其推广为 N>1 是直接的，因为前向过程独立对待每张图片。
-令$x_{i} \in \mathbb{R}$为RoI池化层的第 i 个激活输入，令$y_{r j}$为这一层的第 r 个 RoI 的第 j 个输出。
+令$x_{i} \in \mathbb{R}$为RoI池化层的第 i 个激活输入，令$y_{r j}$为这一层的第 r 个 RoI 的第 j 个输出。RoI 池化层计算$y_{r j}=x_{i^{*}(r, j)}$，其中$i^{*}(r, j)=\operatorname{argmax}_{i^{\prime} \in \mathcal{R}(r, j)} x_{i^{\prime}}$。$\mathcal{R}(r, j)$是输入子窗口的索引集合，输出单元$y_{rj}$在这个子窗口求最大池化。一个$x_i$可能可能被赋值给多个不同的输出$y_{rj}$。
 
-整体框架
+RoI池化层的反向传播，损失函数对输入变量$x_i$的偏导数：
+![](resource/FastRCNN/partial_derivative.png)
 
-训练过程
+上式方括号起筛选作用，里面的表达式满足就取1，不满足取0，原式好像应该是双等号$\left[i==i^{*}(r, j)\right]$。
 
-测试过程
+<span id="sgd-parameters">
+<b>SGD hyper-parameters.</b>
+</span>
 
-数据处理
+用于softmax分类和bbox回归的全卷积层以0均值，方差分别为0.01和0.001的高斯分布初始化。偏置初始化为0。所有层都是用单层权重学习率为1，偏置学习率为2，同时全局学习率为0.001。在VOC07或者VOC12 trainval上训练时，我们使用SGD迭代30k个mini-batch。然后将学习率降低为0.0001再训练10k个mini-batch。在更大的数据集上训练时，会使用SGD迭代更多次，后面会详述。设置动量为0.9，参数（权重和偏置）衰减为0.0005。
+
+<span id="scale-invariance">
+<b>Scale invariance</b>
+</span>
+
+我们探索两种实现目标检测缩放不变性的方式：（1）通过“暴力搜索”学习，（2）使用图像金字塔。这些方法依照[11]中的两种方法。在暴力搜索中，每一张图片在训练和测试时都被处理为预定义的像素尺寸。网络必须直接从训练数据中学习缩放不变性。
+
+多尺度方法，相反，通过图像金字塔提供缩放不变性。测试时，图像金字塔用来近似地尺度归一化每个候选区域。多尺度训练时，依照[11]中的一种数据增强方式，每抽样一个图片，就近似地抽样一个金字塔尺寸。由于GPU内存限制，我们只实验了用多尺度训练更小的网络。
+
+<span id="detection">
+<b>3. Fast R-CNN detection</b>
+</span>
+
+Fast R-CNN网络调优完成后，检测数量远不止运行一次前向传播（假定候选区域是预先计算好的）。网络将一个图片（或者图像金字塔，编码为图片列表）和 R 个打分的候选区域。测试时，R大概是2000，虽然它可能会更大（大约45k）。当使用图像金字塔时，每一个RoI都会缩放到面积和$224^2$接近[11]。
+
+对每个测试 RoI r，前向传播输出一个类别后验概率分布$p$和一个与r对应的bbox偏移集合（对K个类别的每一个都有更精细的bbox预测）。对每一个类别 $k$ 使用概率估计$\operatorname{Pr}(\mathrm{class}=k | r) \triangleq p_{k}$作为r的目标检测置信度。然后使用R-CNN[9]中的算法和设置对每个类别单独地进行非极大值抑制。
 
 
+<span id="svd">
+<b>3.1. Truncated SVD for faster detection</b>
+</span>
 
-问题：
-1、为什么在Fast RCNN中可以使用卷积+全连接层对候选区域分类?
+对整张图片分类，全连接层的计算量与卷积层相比较小。相反，对于检测，要处理的RoI数量很大，前向传播将近有一半的时间花在全连接层（见图2）。
+
+![](resource/FastRCNN/figure2.png)
+
+使用简化(Truncated)SVD[5,23]可以很容易地加速大的全连接层。
+
+通过这种技术，$u \times v$的权重矩阵$W$可以使用SVD近似分解为：
+
+![](resource/FastRCNN/svd.png)
+
+其中，$U$ 是包含$W$的前$t$个左奇异向量的$u \times t$矩阵。$\sum_{t}$是包含$W$的前$t$个奇异值的$t \times t$对角矩阵。$V$是包含$W$的前$t$个右奇异向量的$v \times t$矩阵。简化的SVD将参数量从$uv$减少到$t(u+v)$，当$t$比$\min (u, v)$小的多时就会很显著。为了压缩网络，$W$对应的单层全连接被替换为两层全连接，中间没有非线性运算。第一层使用权重矩阵$\sum_{t} V^{T}$（没有偏置），第二层使用$U$（使用$W$对应的原来的偏置）。这个简单的压缩方法在RoI的数量较大时有比较好的加速效果。
+
+
+<span id="results">
+<b>4.Main results</b>
+</span>
+
+结果展示部分见原论文。
+
+<span id="fine-tune">
+<b>4.5. Which layers to fine-tune?</b>
+</span>
+
+对于在SPPnet论文[11]中考虑的深度较浅的网络，仅对全连接层的调优就能达到良好的精度。我们假设这个结果并不适用于非常深的网络。为了验证卷积层调优对VGG16是重要的，我们使用Fast R-CNN去调优，但是冻结13个卷积层以使只有全连接层去学习。这模拟了单一尺度的SPPnet的训练，mAP从66.9%下降到61.4%（表5）。这个实验证实了我们的假设：对于很深的网络，经过RoI池化层训练是重要的。
+
+![](resource/FastRCNN/table5.png)
+
+这是说应该对所有的卷积层调优吗？不。在更小的网络（S和M）中，我们发现，conv1是通用的并且与任务无关（众所周知的事实[14]）。让或不让conv1去学习，对于mAP没有影响。对于VGG16，我们发现，只需要去更新 conv3_1和及其后面的层（13个层中的9个）。这种观察是有用的：（1）与从conv3_1开始训练相比，从conv2_1开始更新会减慢1.3倍训练速度（12.5对9.5小时）；（2）从conv1_1开始训练，GPU内存不够。从 conv2_1开始训练只是增加0.3个点的mAP（表5，最后一列）。本篇论文中的所有Fast R-CNN的结果都使用从conv3_1开始训练的VGG16;所有使用S和M的模型都是从conv2开始调优。
+
+<span id="design-evaluation">
+<b>5. Design evaluation</b>
+</span>
+
+我们进行省实验去对比Fast R-CNN和SPPnet，同时评估设计决策。遵循最佳实践，我们在PASCAL VOC07数据集上做这些实验。
+
+<span id="does-multi-task-help">
+<b>5.1. Does multi-task training help?</b>
+</span>
+
+多任务训练很方便，因为它避免了处理一些列训练任务。但是它也有提升结果的潜力，因为任务之间通过共享的特征（ConvNet[2]）互相影响。多任务训练可以提升Fast R-CNN的目标检测准确率吗？
+
+为了测试这个问题，我们训练了只使用方程（1）中分类损失$L_{\mathrm{cls}}$的baseline（设置$\lambda=0$）。这些用于模型S,M，和L的baseline在表6每一组的第一列。注意这些模型没有bbox回归。后面 （每组的第二列），我们放入多任务loss（方程（1），$\lambda=1$）训练的网路，但是在测试阶段关闭bbox回归。这隔离了网络的分类准确率并且使baseline之间可以平等对比。
+
+通过这三个网络我们发现相对于单独地分类训练，多任务训练提升了分类准确率。提升从0.8到1.1个点的mAP，证明了**多任务学习的consistent positive effect**。
+
+最后，我们把这些baseline模型（只用分类loss训练），加上bbox回归层，冻结其它网络参数使用$L_{l o c}$训练。每组的第三列展示了分阶段训练的结果：mAP相比第一列有提升，但是分阶段训练效果不如多任务训练（每组第四列）。
+
+
+<span id="which-scale-invariance">
+<b>5.2. Scale invariance: to brute force or finesse?</b>
+</span>
+
+我们比较实现目标检测尺度不变性的两种方法：暴力搜索学习（单尺度）和图像金字塔（多尺度）。在两种情况下，我们都定义图像的最短边为它的尺度$s$。
+
+所有的单尺度实验使用 s=600像素；对于某些图像，s 可能小于600，因为我们将图像的最长边长限制在1000像素同时保持图像宽高比。选择这些值是为了调优训练时让VGG16可以放入GPU内存。更小的模型不受内存限制可以受益于较大的 s 。然而，优化每个模型的 s 不是我们主要关注的问题。我们注意到 PASCAL图像的平均大小是 384x473像素，因此单尺度训练上采样1.6倍。因此RoI池化层的平均有效stride大约是10像素。
+
+在多尺度设置中，我们使用和[11]中同样的5个尺度（$s \in\{480,576,688,864,1200\}$）以便于和SPPnet比较。我们将最长边长设置为2000像素避免超出GPU内存。
+
+![](resource/FastRCNN/table7.png)
+
+表7显示了模型S和M使用一个或五个尺度进行训练和测试。或许在[11]的结果中最令人惊讶的是单尺度检测的效果和多尺度一样好。我们的发现确认了他们的结果：深度ConvNets擅长直接学习尺度不变性。多尺度方法以大量的计算为代价只是增长了很少的mAP（见表7）。在VGG16（模型L）的情形中，受实现细节的限制去使用单尺度训练。然而它达到了66.9%的mAP,比R-CNN[10]的66.0%略高，即使R-CNN使用 "infinite"尺度，每一个候选区域都被包裹（pad）成一个规范的尺寸。
+
+因为**单尺度处理在速度和准确率之间提供了最好的平衡**，对于比较深的模型，所有的实验都使用单尺度训练和测试，s=600。
+
+
+>疑问：究竟什么样的卷积网络能有效地学习到尺度不变性？还是所有的卷积网络都能行？
+
+<span id="more-data">
+<b>5.3. Do we need more training data?</b>
+</span>
+
+**当提供更多训练数据时，一个好的目标检测器应该有提升。** Zhu et al.[24]发现 DPM[8]的mAP 只在几百上千个训练数据上就达到了饱和。这里我们使用VOC07 trainval set 扩增VOC12  trainval set ，大概将图片数量增加三倍至16.5k，以评估Fast R-CNN。扩大训练数据集使在VOC07上的测试从66.9%上升到70.0%（表1）。在这个数据及上训练时，我们使用60k个mini-batch迭代而不是40k。
+
+我们在VOC10和2012上做了相似的实验，我们从VOC07 trainval，test,和VOC12 trainval 联合构建了21.5k图像的数据集。在这个数据集上训练时，我们使用100k SGD迭代，并且每40k（而不是30k）个将学习率降低0.1倍。对于VOC10和2012,mAP分别从66.1%提升到68.8%，从65.7%提升到68.4%。
+
+<span id="svm-softmax">
+<b>5.4. Do SVMs outperform softmax?</b>
+</span>
+
+Fast R-CNN在调优阶段使用softmax分类器学习而不是像R-CNN和SPPnet中那样训练多分类（一对多）线性SVM。我们在Fast R-CNN中使用难例挖掘训练了post-hoc SVM。我们使用和R-CNN中同样的训练算法和超参数。
+
+![](resource/FastRCNN/table8.png)
+
+表8显示三个网络的softmax都略微比SVM好一点，0.1到0.8个mAP点。效果很小，不过它表明一阶段调优与之前的多阶段训练是相当的。注意softmax，不像一对多SVM，在给RoI打分时会给类别之间引入竞争。
+
+
+<span id="more-proposals">
+<b>5.5. Are more proposals always better?</b>
+</span>
+
+大体上有两种类型的目标检测器：一种使用稀疏的候选区域（比如，选择性搜索[21]），另一种使用密集的候选区域（比如,DPM[8]）。对稀疏的候选区域分类是一种级联[22]，这种候选机制首先提出大量的候选区域，留给分类器一小部分去评估。当使用DPM检测器[21]时，这种级联提高了分类精度。我们发现级联分类也能提高Fast R-CNN的准确率。
+
+使用选择性搜索的质量模式，每张图像提取1k到10k候选区域，每次重新训练重新测试模型M。If proposals serve a purely computational
+role, increasing the number of proposals per image should not harm mAP.（这句不知道怎么翻译了，有知道的麻烦在issues或通过邮件kingstying@gmail.com告诉我。）
+
+我们发现随着候选区域数量的增多mAP轻微地升高又降低（图，蓝色实线）。这个实验说明**更多的候选对深度分类器的准确率并没有帮助，甚至还有一点伤害。**
+
+不真正做实验是很难预料到这个结果的。衡量候选区域质量的最好标准是平均召回率（AR）[12]。当每张图片使用固定数量的候选区域时，AR可以和mAP关联的很好。（AR correlates well with mAP for several proposal methods using R-CNN, when using a fixed number of proposals per image.）图3表明当每张图片的候选区域数量不定时，AR(红色实线)与mAP关联的不好。AR必须小心使用；更多的候选产生了更高的AR并不意味着mAP也会提高。幸运的是，模型M的训练和测试时间小于2.5小时。Fast R-CNN因此能够有效的，直接评估候选区域的mAP，这比代理指标更可取。
+
+我们也研究了使用密集矩形（尺寸，位置，和宽高比）的Fast R-CNN，每张图片大约有45k个矩形。这个密集集合足够丰富，当每一个选择性搜索矩形被替换为最接近（IoU）的密集矩形时，mAP只下降了1个点（到57.7%，图3，蓝色三角形）。
+
+**密集矩形框和选择性搜索矩形框的统计信息不同。** 从2k个选择性搜索框开始，添加 1000x{2,4,6,8,10,32,45}个密集框的随机抽样，测试mAP。对每一次实验我们都重新训练和测试模型M。当加入密集框后，mAP比添加更多的选择性搜索框下降的更多，最终降到53.0%。
+
+我们也只使用密集框（45k/image）训练和测试了Fast R-CNN。这个设置产生52.9%的mAP（蓝色菱形）。最后，我们检查使用难例挖掘的SVM是否需要去处理密集框的分布。SVM更差：49.3%（蓝色圆圈）。
