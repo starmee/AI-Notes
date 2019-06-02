@@ -23,8 +23,8 @@
 <b> 目标检测 </b>
 </span>
 
-  [RCNN](深度学习/计算机视觉/目标检测/RCNN.md)、
-  [Fast RCNN](深度学习/计算机视觉/目标检测/FastRCNN.md)
+  [RCNN](深度学习/计算机视觉/目标检测/RCNN.md)、  
+  [Fast RCNN](深度学习/计算机视觉/目标检测/FastRCNN.md)  
 
 <span id="image-generate">
 <b> 图像生成 </b>
@@ -43,13 +43,14 @@
 <b> 深度学习 </b>
 </span>
 
-[神经网络](深度学习/基础/神经网络.md)、
-[激活函数](深度学习/基础/激活函数.md)、
-[Dying ReLU](深度学习/基础/Dying_ReLU.md)、
-[BatchNormalization](深度学习/基础/BatchNormalization.md)、
-[RCNN](深度学习/计算机视觉/目标检测/RCNN.md)、
-[Fast RCNN](深度学习/计算机视觉/目标检测/FastRCNN.md)、
-[FUNIT](深度学习/计算机视觉/生成/FUNIT.md)、
+[神经网络](深度学习/基础/神经网络.md)、  
+[激活函数](深度学习/基础/激活函数.md)、  
+[Dying ReLU](深度学习/基础/Dying_ReLU.md)、  
+[BatchNormalization](深度学习/基础/BatchNormalization.md)、  
+[Back-propagation through Conv and Pooling layers](深度学习/基础/back-prop-through-conv-pool-layer.md)、  
+[RCNN](深度学习/计算机视觉/目标检测/RCNN.md)、  
+[Fast RCNN](深度学习/计算机视觉/目标检测/FastRCNN.md)、  
+[FUNIT](深度学习/计算机视觉/生成/FUNIT.md)、  
 
 
 

@@ -1,7 +1,7 @@
 <center><b>Fast R-CNN</b></center>
 
-论文:[Fast R-CNN](resource/FastRCNN/FastRCNN.pdf)
-Caffe代码:https://github.com/rbgirshick/fast-rcnn
+论文:[Fast R-CNN](resource/FastRCNN/FastRCNN.pdf)  
+Caffe代码:https://github.com/rbgirshick/fast-rcnn  
 
 * [1. Introduction](#introduction)
 * [2. Fast R-CNN architecture and training](#architecture)
@@ -25,26 +25,30 @@ Caffe代码:https://github.com/rbgirshick/fast-rcnn
   * [5.5. Are more proposals always better?](#more-proposals)
 
 
-=========================================================================
+========================================================================  
+
 <span id="introduction">
 <b>1. Introduction</b>
 </span>
 
 Fast RCNN 属于目标检测领域，是对RCNN和SPPNet的改进。
 [RCNN](RCNN.md)主要有如下问题:
-（1）训练分多阶段。预训练->调优训练->SVM分类->bbox回归
-（2）训练需要大量的时间和空间。从候选区域提取的特征需要使用很长时间，并且特征需要保存到磁盘上，需要占据大量磁盘空间。
-（3）检测速度慢。在测试阶段每个候选区域都要被检测一遍。
+
+（1）训练分多阶段。预训练->调优训练->SVM分类->bbox回归  
+（2）训练需要大量的时间和空间。从候选区域提取的特征需要使用很长时间，并且特征需要保存到磁盘上，需要占据大量磁盘空间。  
+（3）检测速度慢。在测试阶段每个候选区域都要被检测一遍。  
 
 
 RCNN之所以慢主要是因为它对每一个候选区域做卷积运算，没有共享计算。空间金字塔池化网络（[SPPnets](SPPNet.md)）[11]通过共享计算来加速RCNN。SPPnet计算整个输入图像的卷积特征图，然后使用从共享特征图中提取的特征向量对每个物体进行分类。SPPnet通过将输入图像池化为三个固定尺寸的特征图来处理不同大小的图像输入。如下图所示：
+
 ![SPP](resource/FastRCNN/spp.dib)
+
 SPPnet的测试时间比RCNN提升了10到100倍，训练时间比RCNN提升了3倍。但SPPnet和RCNN一样是多阶段的，需要预训练、调优训练、训练SVM分类器、bbox回归，特征也要保存到磁盘。SPPnet有一个独有的缺点就是模型调优时不能更新金字塔池化层前面的卷积层，这限制了比较深的网络的准确率。
-Fast RCNN改进了RCNN和SPPnet的以上缺点，同时提升了速度和准确率。主要优点有：
-（1）检测质量（mAP）比RCNN、SPPnet更高
-（2）训练是单阶段的，使用多任务loss
-（3）训练时可以更新所有的网络层
-（4）特征不需要存储到磁盘
+Fast RCNN改进了RCNN和SPPnet的以上缺点，同时提升了速度和准确率。主要优点有：  
+（1）检测质量（mAP）比RCNN、SPPnet更高  
+（2）训练是单阶段的，使用多任务loss  
+（3）训练时可以更新所有的网络层  
+（4）特征不需要存储到磁盘  
 
 <span id="architecture">
 <b>2. Fast R-CNN architecture and training</b>
@@ -62,6 +66,8 @@ RoI池化层使用最大池化将感兴趣的有效区域内的特征转化为�
 
 RoI最大池化将 h x w 的 RoI 窗口分成 H x W 的网格，每个网络尺寸大约为 h/H x w/W , 然后取每个网格的最大值。每个特征通道的池化就像最大池化那样是独立进行的。RoI池化是SPPnet中空间金字塔池化的特例，这里只有一层金字塔。
 
+>作者的RoI 池化层的实现代码:https://github.com/rbgirshick/caffe-fast-rcnn/blob/bcd9b4eadc7d8fbc433aeefd564e82ec63aaf69c/src/caffe/layers/roi_pooling_layer.cpp
+https://github.com/rbgirshick/caffe-fast-rcnn/blob/bcd9b4eadc7d8fbc433aeefd564e82ec63aaf69c/src/caffe/layers/roi_pooling_layer.cu
 
 <span id="pre-train">
 <b>2.2. Initializing from pre-trained networks</b>
@@ -69,16 +75,16 @@ RoI最大池化将 h x w 的 RoI 窗口分成 H x W 的网格，每个网络尺�
 
 我们实验了三个ImageNet[4]预训练模型，每个都有 5 个最大池化层和 5 到 13 个卷积层（详见4.1章）。使用预训练网络初始化Fast RCNN，有三个修改。
 第一、最后一个最大池化层被一个RoI池化层代替，通过设置H和W以和后面的第一个全连接层兼容（比如，对于VGG16，H=W=7）。
-第二、网络的最后一个全连接层和softmax层（ImageNet1000分类）被替换为两个并列层（一个全连接层用于K+1分类，另一个做指定类别的bbox回归）。
+第二、网络的最后一个全连接层和softmax层（ImageNet1000分类）被替换为两个并列全连接层（一个全连接层用于K+1分类，另一个做指定类别的bbox回归）。
 第三、网络修改为两个输入：一组图像和一组图像对应的候选区域。
 
 <span id="fine-tuning">
 <b>2.3. Fine-tuning for detection</b>
 </span>
 
-使用反向传播训练所有网络权重是Fast RCNN的 重要能力。首先，我们阐述为什么SPPnet不能更新空间金字塔池化下的权重。
+使用反向传播训练所有网络权重是Fast RCNN的 重要能力。首先，我们阐述**为什么SPPnet不能更新空间金字塔池化下的权重。**
 
-根本原因是当每个训练样例（比如 RoI）都来自不同的图像时，通过SPP层的反向传播非常低效，这正是RCNN和SPPnet的训练方式。效率低下的原因在于每个RoI可能有非常大的感受域，通常跨越整个输入图像。由于前向传播必须处理整个感受域，所以训练输入会很大（通常是整个图像）。
+**根本原因是当每个训练样例（比如 RoI）都来自不同的图像时，通过SPP层的反向传播非常低效**，这正是RCNN和SPPnet的训练方式。效率低下的原因在于每个RoI可能有非常大的感受域，通常跨越整个输入图像。由于前向传播必须处理整个感受域，所以训练输入会很大（通常是整个图像）。
 
 我们提出了一个更有效的训练方法，利用训练期间的特征共享。在Fast RCNN训练阶段，随机梯度下降（SGD）mini-batches 被分层抽样。首先抽样N个图片然后从每张图片中抽样 R/N 个RoIs。重要的是，同一张图片的RoIs在前向和反向传播中共享计算和存储。减小N就可以减小mini-batch的计算量。比如，当N=2,R=128,所提出的训练方案大约比从128个不同图片中各抽样一个RoI快大约64倍（这就是RCNN和SPPnet的策略）。
 
@@ -86,6 +92,7 @@ RoI最大池化将 h x w 的 RoI 窗口分成 H x W 的网格，每个网络尺�
 
 除了分层抽样，Fast RCNN使用简化的训练过程，一个调优阶段联合优化softmax分类器和bbox回归器，而不用分三个阶段训练[9,11]softmax分类器、SVM、和回归器。该步骤的组成部分（损失函数、mini-batch抽样策略、RoI池化层的反向传播、和SGD超参数）在下面描述。
 
+>我的理解：由于RoI池化的窗口会比较大，所以只有使用Fast RCNN的策略才能有效训练，才不会出现SPPnet在RoI池化层反向传播低效的情况。
 
 <span id="multi-task-loss">
 <b>Multi-task loss</b>
@@ -131,6 +138,55 @@ RoI池化层的反向传播，损失函数对输入变量$x_i$的偏导数：
 
 上式方括号起筛选作用，里面的表达式满足就取1，不满足取0，原式好像应该是双等号$\left[i==i^{*}(r, j)\right]$。
 
+>这个公式对应的代码：
+https://github.com/rbgirshick/caffe-fast-rcnn/blob/bcd9b4eadc7d8fbc433aeefd564e82ec63aaf69c/src/caffe/layers/roi_pooling_layer.cu
+```
+    for (int ph = phstart; ph < phend; ++ph) {
+        for (int pw = pwstart; pw < pwend; ++pw) {
+          if (offset_argmax_data[ph * pooled_width + pw] == (h * width + w)) {
+            gradient += offset_top_diff[ph * pooled_width + pw];
+          }
+        }
+    }
+
+...
+#other code
+...
+
+bottom_diff[index] = gradient;
+```
+>这和普通池化层的反向传播本质是相同的，只是上采样的操作略有不同。池化层和卷积层的反向传播：[卷积层的反向传播](../../基础/back-prop-through-conv-pool-layer.md)
+
+普通池化层梯度反向传播代码：
+https://github.com/rbgirshick/caffe-fast-rcnn/blob/bcd9b4eadc7d8fbc433aeefd564e82ec63aaf69c/src/caffe/layers/pooling_layer.cu
+```
+    for (int ph = phstart; ph < phend; ++ph) {
+        for (int pw = pwstart; pw < pwend; ++pw) {
+          if (top_mask[ph * pooled_width + pw] == h * width + w) {
+            gradient += top_diff[ph * pooled_width + pw];
+          }
+        }
+      }
+
+...
+#other code
+...
+
+bottom_diff[index] = gradient;
+```
+
+不同的一点就是普通的池化层不同的窗口之间可能有重叠（取决于池化窗口的大小和stride），RoI池化是没有重叠的。这里的累加`gradient += top_diff[ph * pooled_width + pw];`就是为了处理重叠的情况。
+CPU的代码会更直观：
+https://github.com/rbgirshick/caffe-fast-rcnn/blob/bcd9b4eadc7d8fbc433aeefd564e82ec63aaf69c/src/caffe/layers/pooling_layer.cpp
+```
+            for (int h = hstart; h < hend; ++h) {
+              for (int w = wstart; w < wend; ++w) {
+                bottom_diff[h * width_ + w] +=
+                  top_diff[ph * pooled_width_ + pw] / pool_size;
+              }
+            }
+```
+
 <span id="sgd-parameters">
 <b>SGD hyper-parameters.</b>
 </span>
@@ -170,6 +226,7 @@ Fast R-CNN网络调优完成后，检测数量远不止运行一次前向传播�
 
 其中，$U$ 是包含$W$的前$t$个左奇异向量的$u \times t$矩阵。$\sum_{t}$是包含$W$的前$t$个奇异值的$t \times t$对角矩阵。$V$是包含$W$的前$t$个右奇异向量的$v \times t$矩阵。简化的SVD将参数量从$uv$减少到$t(u+v)$，当$t$比$\min (u, v)$小的多时就会很显著。为了压缩网络，$W$对应的单层全连接被替换为两层全连接，中间没有非线性运算。第一层使用权重矩阵$\sum_{t} V^{T}$（没有偏置），第二层使用$U$（使用$W$对应的原来的偏置）。这个简单的压缩方法在RoI的数量较大时有比较好的加速效果。
 
+>这个实现方式是将训练好的模型权重进行SVD运算得到U和V，然后分别作为两个全连接层的权重，代码：https://github.com/rbgirshick/fast-rcnn/blob/master/tools/compress_net.py
 
 <span id="results">
 <b>4.Main results</b>
@@ -187,6 +244,7 @@ Fast R-CNN网络调优完成后，检测数量远不止运行一次前向传播�
 
 这是说应该对所有的卷积层调优吗？不。在更小的网络（S和M）中，我们发现，conv1是通用的并且与任务无关（众所周知的事实[14]）。让或不让conv1去学习，对于mAP没有影响。对于VGG16，我们发现，只需要去更新 conv3_1和及其后面的层（13个层中的9个）。这种观察是有用的：（1）与从conv3_1开始训练相比，从conv2_1开始更新会减慢1.3倍训练速度（12.5对9.5小时）；（2）从conv1_1开始训练，GPU内存不够。从 conv2_1开始训练只是增加0.3个点的mAP（表5，最后一列）。本篇论文中的所有Fast R-CNN的结果都使用从conv3_1开始训练的VGG16;所有使用S和M的模型都是从conv2开始调优。
 
+**不必要对所有的卷积层调优**。
 <span id="design-evaluation">
 <b>5. Design evaluation</b>
 </span>
