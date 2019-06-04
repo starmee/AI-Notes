@@ -18,6 +18,7 @@
 * [深度学习](#deep-learning)  
 
 * [部署框架](#deploy-archatecture)
+* [Datasets](深度学习/基础/datasets.md)
   
 <span id="object-detection">
 <b> 目标检测 </b>
@@ -48,6 +49,7 @@
 [Dying ReLU](深度学习/基础/Dying_ReLU.md)、  
 [BatchNormalization](深度学习/基础/BatchNormalization.md)、  
 [Back-propagation through Conv and Pooling layers](深度学习/基础/back-prop-through-conv-pool-layer.md)、  
+[卷积、全连接和仿射变换](深度学习/基础/conv-fullyconnect-and-affine.md)
 [RCNN](深度学习/计算机视觉/目标检测/RCNN.md)、  
 [Fast RCNN](深度学习/计算机视觉/目标检测/FastRCNN.md)、  
 [FUNIT](深度学习/计算机视觉/生成/FUNIT.md)、  
