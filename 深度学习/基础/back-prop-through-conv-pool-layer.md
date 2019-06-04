@@ -2,6 +2,7 @@
 https://blog.csdn.net/Candy_GL/article/details/79470804
 https://www.cnblogs.com/pinard/p/6494810.html
 https://www.slideshare.net/mobile/kuwajima/cnnbp
+http://jermmy.xyz/2017/12/16/2017-12-16-cnn-back-propagation/
 
 这几篇文章写的不错，但总感觉让人迷惑。前两篇文章的描述中已知了池化层的误差$\delta ^l$求池化层前面一层的误差，按照我的理解
 $$\delta ^{l-1}=\frac{\partial J}{\partial z^{l-1}}=\frac{\partial J}{\partial z^l}\frac{\partial z^l}{\partial z^{l-1}}=\delta ^l\frac{\partial z^l}{\partial z^{l-1}}$$
@@ -12,8 +13,8 @@ $$\delta ^{l-1}=\delta ^l\frac{\partial z^l}{\partial a^{l-1}}\frac{\partial a^{
 至于$ \sigma'(z^{l-1})$具体是什么就和$l-1$层的类型有关了,$\sigma 表示激活函数$。
 
 对于卷积层的推导也一样，实际的卷积层也在$l-1$层(这里求的就是卷积层)
-$$\delta ^{l-1} = \frac{\partial J}{\partial z^{l}}\frac{\partial z^l}{\partial z^{l-1}}=\delta ^{l}\frac{\partial a^{l-1}}{\partial z^{l-1}}$$
-如果是全连接层，这里的 $a^{l-1}=sigmoid(z^{l-1})$（这里假设激活函数是sigmoid）,但是这里是卷积层，$a^{l-1}$是$z^{l-1}$经过卷积又经过激活函数后的结果，就是$\sigma(z^{l-1}*w^{l-1}+b)$，所以这里既要求激活函数的导数有要求卷积操作的导数。最后结果就是
+$$\delta ^{l-1} = \frac{\partial J}{\partial z^{l}}\frac{\partial z^l}{\partial a^{l-1}}\frac{\partial a^{l-1}}{\partial z^{l-1}}=\delta ^{l}\frac{\partial z^l}{\partial a^{l-1}}\frac{\partial a^{l-1}}{\partial z^{l-1}}$$
+如果是全连接层，这里的 $a^{l-1}=sigmoid(z^{l-1})$（这里假设激活函数是sigmoid）,$z_{l}$是$a_{l-1}$经过卷积层的结果，就是$\sigma(z^{l-1}*w^{l-1}+b)$，所以这里既要求激活函数的导数又要求卷积操作的导数。最后结果就是
 $$\delta ^{l-1}=\delta ^l *rot180(w^{l-1})\cdot \sigma '({z^{l-1}})$$
 具体形式的推导参考上面第二篇文章。
 由上式可以看出卷积层的反向传播由卷积操作和点乘组成，没有新的运算类型。

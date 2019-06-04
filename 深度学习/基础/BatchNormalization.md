@@ -2,13 +2,13 @@
 
 ##### BN 提出的动机
 Batch Normalization 的提出是为了解决内部方差偏移（internal covariate shift,ICS）的问题。 论文：[Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift](resource/BatchNormalization/BatchNormalization.pdf)
-ICS是指神经网络种前面层的参数变化导致后面层的输入发生变化。
-ICS使得模型训练需要使用较小的学习率和精细的参数初始化，从而减慢模型训练速度。并且使得训练具有饱和非线性得模型变得非常困难。
+ICS是指神经网络种前面层的参数变化导致后面层的输入发生变化。  
+ICS使得模型训练需要使用较小的学习率和精细的参数初始化，从而减慢模型训练速度。并且使得训练具有饱和非线性得模型变得非常困难。  
 
 ##### BN 的效果
-* 加速模型的训练（缓解梯度消失，支持更大的学习率）
-* 降低参数初始化的要求
-* 有正则化效果减少过拟合
+* 加速模型的训练（缓解梯度消失，支持更大的学习率）  
+* 降低参数初始化的要求  
+* 有正则化效果减少过拟合  
   
 ##### 原理
 * BN会针对**每一批训练数据**，在网络的**每一层输入**之前做**归一化**处理，使输入的均值为0，标准差为1。目的是将**数据**限制在统一的**分布**下。
@@ -35,8 +35,8 @@ ICS使得模型训练需要使用较小的学习率和精细的参数初始化�
 ##### 相关问题
 
 * **为什么训练时不用全局统计量?**
-  1、使用BN的目的就是为了保证每批数据的分布稳定，使用全局统计量潍坊了这个初衷。
-  2、作者认为在训练时使用全局统计量可能会与梯度优化相互抵消:
+  1、使用BN的目的就是为了保证每批数据的分布稳定，使用全局统计量违背了这个初衷。  
+  2、作者认为在训练时使用全局统计量可能会与梯度优化相互抵消:  
   >It is natural to ask whether we could simply use the moving averages µ, σ to perform the normalization during training, since this would remove the dependence of the normalized activations on the other example in the minibatch. This, however, has been observed to lead to the model blowing up. As argued in [6], such use of moving averages would cause the gradient optimization and the normalization to counteract each other. For example, the gradient step may increase a bias or scale the convolutional weights, in spite of the fact that the normalization would cancel the effect of these changes on the loss. This would result in unbounded growth of model parameters without actually improving the loss. It is thus crucial to use the minibatch moments, and to backpropagate through them.
 
   出自[Batch Renormalization: Towards Reducing Minibatch Dependence in Batch-Normalized Models](resource/BatchNormalization/BatchRenormalization.pdf)
@@ -68,9 +68,12 @@ BN的效果虽然很好，但是作用原理受到了质疑。MIT的研究者在
 详见[深度学习中批归一化的陷阱](http://ai.51cto.com/art/201705/540230.htm)
 
 ##### 用法
-1、如果在Tensorflow中使用 BN，需要在训练时加上下面的代码：
+1、如果在Tensorflow中使用 BN，需要在训练时加上下面的代码：  
 ![bn_tf](resource/BatchNormalization/bn_tf.png)
 2、如果在Caffe中使用 BN，需要在推理时指定参数`use_global_stats:true`，训练时指定 `false`（默认就是 `false`）。
+
+##### 更多  
+[深度学习网络层之 Batch Normalization](https://www.cnblogs.com/makefile/p/batch-norm.html?utm_source=debugrun&utm_medium=referral)  
 
 **参考**
 [1] [Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift](resource/BatchNormalization/BatchNormalization.pdf)
