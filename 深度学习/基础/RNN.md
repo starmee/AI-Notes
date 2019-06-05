@@ -23,14 +23,16 @@
 </span>
 
 RNN通常用下面的公式定义隐藏单元的值:
-![](resource/RNN/h.png)  
+<!-- ![](resource/RNN/h.png)   -->
+<img src="resource/RNN/h.png" width=200>  
 这个公式表示，隐藏单元$h^{(t)}$的值由前一个时刻的隐藏状态$h^{(t-1)}$，当前的输入$x^{(t)}$和网络的参数$\theta$共同决定。  
 很明显，这个公式是可以沿着时间$t$循环展开的，如下图：  
-![](resource/RNN/unfold.png)
-
+<!-- ![](resource/RNN/unfold.png) -->
+<img src="resource/RNN/unfold.png" width=550>  
 
 我们也可以这样表示RNN：  
-![](resource/RNN/h1.png)  
+<!-- ![](resource/RNN/h1.png)   -->
+<img src="resource/RNN/h1.png" width=400>  
 这个公式表示函数$g^{(t)}$以时间序列$\left(\boldsymbol{x}^{(t)}, \boldsymbol{x}^{(t-1)}, \boldsymbol{x}^{(t-2)}, \ldots, \boldsymbol{x}^{(2)}, \boldsymbol{x}^{(1)}\right)$为输入生成当前状态$h^{(t)}$。  
 
 循环结构有两个优点：  
@@ -50,7 +52,7 @@ RNN主要有以下三种设计模式：
 
 （3）隐藏单元之间存在循环连接，但读取整个序列后产生单个输出的循环网络。  
 <!-- ![](resource/RNN/rnn3.png)   -->
-<img src="resource/RNN/rnn3.png" width=500/>  
+<img src="resource/RNN/rnn3.png" width=450/>  
 
 </br>
 <span id="forward">
@@ -58,14 +60,19 @@ RNN主要有以下三种设计模式：
 </span>  
 
 前向传播以第一种设计模式为例。  
+<img src="resource/RNN/rnn1.png" width=500/>  
 假设隐藏单元$h$的激活函数为$tanh$,输出$y$的激活函数为$softmax$。前向传播的更新方程如下：  
 <img src="resource/RNN/forward.png" width=300>
 
+</br>
+<span id="backward">
+<b>三、RNN的反向传播</b>
+</span>  
 
 
 
 
 **参考**  
-[1] 《深度学习》  
+[1] [《深度学习》](resource/RNN/dlbook_cn_public.pdf)  
 [2] [专题-RNN](https://github.com/imhuay/Algorithm_Interview_Notes-Chinese/blob/master/A-深度学习/B-专题-RNN.md)  
 [3] [循环神经网络(RNN)模型与前向反向传播算法](https://www.cnblogs.com/pinard/p/6509630.html)  
