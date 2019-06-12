@@ -8,6 +8,7 @@
 由于存在同一篇笔记属于多个分类的情况，所以这里我给每篇笔记都按照分类标签列出来。  
 
 由于一些篇章中会出现公式，可以使用浏览器插件解析公式。Chrome浏览器可以使用插件“MathJax Plugin for Github”。  
+另外，推荐一个在线数学公式编辑网站：http://latex.91maths.com/ ， 和一个数学公式图片转文本工具：Mathpix Snipping Tool。
 
 * [目标检测](#object-detection)
 
@@ -18,6 +19,7 @@
 * [深度学习](#deep-learning)  
 
 * [部署框架](#deploy-archatecture)
+* [训练框架](#train-archatecture)
 * [Datasets](深度学习/基础/datasets.md)
   
 <span id="object-detection">
@@ -61,3 +63,9 @@
 </span>
 
 [TVM](深度学习/部署框架/TVM/TVM部署.md)
+
+<span id="train-archatecture">
+<b> 训练框架 </b>
+</span>
+
+[Caffe环境搭建](深度学习/训练框架/Caffe/Caffe环境搭建.md)

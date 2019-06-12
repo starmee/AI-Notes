@@ -69,6 +69,7 @@ RNN主要有以下三种设计模式：
 <b>三、RNN的反向传播</b>
 </span>  
 
+https://zybuluo.com/hanbingtao/note/541458
 
 
 
