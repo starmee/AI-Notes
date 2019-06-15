@@ -56,7 +56,7 @@ RNN主要有以下三种设计模式：
 
 </br>
 <span id="forward">
-<b>二、RNN的前向传播</b>
+<b>三、RNN的前向传播</b>
 </span>  
 
 前向传播以第一种设计模式为例。  
@@ -66,13 +66,21 @@ RNN主要有以下三种设计模式：
 
 </br>
 <span id="backward">
-<b>三、RNN的反向传播</b>
+<b>四、RNN的反向传播</b>
 </span>  
 
 https://zybuluo.com/hanbingtao/note/541458
 
+</br>
+<span id="gradient">
+<b>五、RNN的梯度消失与爆炸</b>
+</span>  
 
-
+https://zybuluo.com/hanbingtao/note/541458
+![](resource/RNN/gradient.png)
+上面的公式（73）其实和 [神经网络的梯度消失与爆炸](神经网络.md#title-3) 中的梯度分析公式    
+![](resource/RNN/w.png)  
+在形式上是一样的。所以RNN的梯度问题其实和全连接层的梯度问题本质是相同的，不过由于RNN共享时间权重$W$，梯度问题会更严重。
 **参考**  
 [1] [《深度学习》](resource/RNN/dlbook_cn_public.pdf)  
 [2] [专题-RNN](https://github.com/imhuay/Algorithm_Interview_Notes-Chinese/blob/master/A-深度学习/B-专题-RNN.md)  
