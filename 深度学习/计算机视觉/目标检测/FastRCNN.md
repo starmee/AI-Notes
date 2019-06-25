@@ -92,7 +92,8 @@ https://github.com/rbgirshick/caffe-fast-rcnn/blob/bcd9b4eadc7d8fbc433aeefd564e8
 
 除了分层抽样，Fast RCNN使用简化的训练过程，一个调优阶段联合优化softmax分类器和bbox回归器，而不用分三个阶段训练[9,11]softmax分类器、SVM、和回归器。该步骤的组成部分（损失函数、mini-batch抽样策略、RoI池化层的反向传播、和SGD超参数）在下面描述。
 
->我的理解：由于RoI池化的窗口会比较大，所以只有使用Fast RCNN的策略才能有效训练，才不会出现SPPnet在RoI池化层反向传播低效的情况。
+>我的理解：~~由于RoI池化的窗口会比较大，所以只有使用Fast RCNN的策略才能有效训练，才不会出现SPPnet在RoI池化层反向传播低效的情况。~~
+>bbox 需要一步步微调才能提高精度，如果是不同图片的RoI混在一起训练，不同RoI之间是不相关的，不容易训练。同一张图片的RoI在一起训练，不同RoI之间的位置、尺寸是有关联的，这样容易训练。
 
 <span id="multi-task-loss">
 <b>Multi-task loss</b>

@@ -3,6 +3,8 @@
 论文：[Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks](resource/FasterRCNN/FasterRCNN.pdf)  
 代码：https://github.com/ShaoqingRen/faster_rcnn  
 
+[Faster-RCNN算法精读](https://blog.csdn.net/hunterlew/article/details/71075925)
+[Tensorflow 版本 Faster RCNN 代码解读](https://zhuanlan.zhihu.com/p/32230004)
 
 * [摘要](#abstract)
 * [1、介绍](#introduction)
@@ -71,6 +73,8 @@ RPN以一张任意大小的图片为输入，输出一组矩形候选框，每�
 比较一下，MultiBox 方法[20]使用 k-means 生成800个锚点，这些锚点不具有平移不变性。如果平移图片中的一个目标，候选区域应该平移并且同样的函数应该能够在任一位置预测这个候选区域。此外，由于MultiBox锚点不具有平移不变性，它需要 (4+1)x800 维度的输出层，而我们的方法只需要 (4+2)x9 维度的输出层。我们提出的层有更小数量级的参数量（MultiBox使用 GoogLeNet[20]有27百万的参数 vs RPN使用VGG-16有2.4百万的参数），因此在像PASCAL  VOC的小数据集上过拟合的风险更低。  
 >总结：RPN的回归层有4k个输出，k个候选区域，每个区域4个值。分类层有2k个输出，每个候选区域有两个概率，有目标、没有目标的概率。k个候选区域对应k个锚点。k一般是9。锚点和计算锚点对应的候选框的函数都具有平移不变性。  
 
+>再说一下论文里说的不是很清楚的**锚点**。**RPN以3x3的卷积核在卷积特征图上滑动，可以认为是这个3x3窗口对应了原图上的 k 个区域（锚点），这样总共有$WHk$个锚点。根据这些锚点和ground truth的IoU 做正例和负例的筛选，然后用这些正例和负例训练RPN网络，由RPN网络输出更准确的 proposal regions。然后将proposal regions映射到卷积特征图，再使用RoI池化从特征图中提取特征进行分类与精修。**  
+
 <span id="loss">
 <b>学习区域提议的损失函数</b>
 </span>
@@ -80,9 +84,9 @@ RPN以一张任意大小的图片为输入，输出一组矩形候选框，每�
 参考Fast R-CNN中的多任务损失函数，我们的损失函数定义为：
 ![](resource/FasterRCNN/loss.png)  
 
-$i$是mini-batch中锚点的索引，$p_i$是预测锚点$i$是目标的概率。如果锚点是正类的，ground-truth 标签 $p^*_i$是1，如果锚点是负类，$p^*_i$就是0。$t_i$是预测的bbox的4个参数化的坐标组成的向量，$t^*_i$是与一个正类锚点相关的ground-truth box。分类损失$L_{cls}$是两个类别（目标vs非目标）的对数损失。对于回归损失，我们用  
+$i$是mini-batch中锚点的索引，$p_i$是预测锚点$i$是目标的概率。如果锚点是正类的，ground-truth 标签 $p^{*}_{i}$是1，如果锚点是负类，$p^{*}_{i}$就是0。$t_i$是预测的bbox的4个参数化的坐标组成的向量，$t^{*}_{i}$是与一个正类锚点相关的ground-truth box。分类损失$L_{cls}$是两个类别（目标vs非目标）的对数损失。对于回归损失，我们用  
 ![](resource/FasterRCNN/lreg.png)  
-其中$R$是定义在[5]中的鲁棒损失函数（smooth L1）。$p_{i}^{*} \boldsymbol{L}_{r e g}$表示回归损失只对正类锚点（$p^*_i = 1$）是激活的，否则（$p^*_i=0$）就是不激活的。分类层和回归层的输出分别包含 $\left\{p_{i}\right\}$ 和 $\left\{t_{i}\right\}$ 。这两项损失由$N_{c l s}$ 和 $N_{r e g}$ 归一化，使用平衡权重$\lambda$平衡两个损失。  
+其中$R$是定义在[5]中的鲁棒损失函数（smooth L1）。${p_{i}^{*} \boldsymbol{L}_{r e g}}$表示回归损失只对正类锚点（$p^*_i = 1$）是激活的，否则（$p^*_i=0$）就是不激活的。分类层和回归层的输出分别包含 $\left\{p_{i}\right\}$ 和 $\left\{t_{i}\right\}$ 。这两项损失由$N_{c l s}$ 和 $N_{r e g}$ 归一化，使用平衡权重$\lambda$平衡两个损失。  
 
 对于回归，四个坐标的参数化如下[6]：  
 ![](resource/FasterRCNN/coords.png)  
