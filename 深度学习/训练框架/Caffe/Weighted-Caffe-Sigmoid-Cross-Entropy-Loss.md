@@ -1,6 +1,7 @@
-<center><b>自定义Caffe Python 加权 sigmoid 交叉熵损失函数</b></center>
+<center><b>自定义Caffe Python 加权 sigmoid 交叉熵损失函数</b></center>  
 
-####一、导数推导  
+
+#### 一、导数推导  
 
 下面参考上述博客推到加权交叉熵损失的导数  
 将权重$w$加在类别1上面，类别0的权重为1，则损失函数为：  
@@ -11,7 +12,7 @@ $$L=(t-1)x + (-wt+t-1)ln(1+e^{-x}) $$            (1)式
  求导,得  
 $$\frac{\partial L}{\partial x} = wt - (wt-t+1)P$$  
 可以看出，当权重为1时就是不加权的Loss。  
-####二、实现Python SigmoidCrossEntropyWeightLossLayer  
+#### 二、实现Python SigmoidCrossEntropyWeightLossLayer  
 
 ```
 import caffe
