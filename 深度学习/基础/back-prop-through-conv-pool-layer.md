@@ -1,4 +1,4 @@
-<body>
+<head>
 <script type="text/x-mathjax-config">
   MathJax.Hub.Config({
     tex2jax: {
@@ -83,4 +83,4 @@ void caffe_cpu_gemm<float>(const CBLAS_TRANSPOSE TransA,
 }
 ```
 
-</body>
+</head>
