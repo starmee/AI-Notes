@@ -1,3 +1,4 @@
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
 参考：
 https://blog.csdn.net/Candy_GL/article/details/79470804
 https://www.cnblogs.com/pinard/p/6494810.html
