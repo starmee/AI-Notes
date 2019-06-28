@@ -1,4 +1,3 @@
-<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
 
 # AI-Notes
 考虑到之前做的笔记总是不够系统完整，所以开这个项目做规范的学习总结以及分享交流。  
