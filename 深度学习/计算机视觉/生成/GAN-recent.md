@@ -1,0 +1,1 @@
+[论文](resource/GAN-recent/Generative-Adversarial-Networks-recent-developments.pdf)
